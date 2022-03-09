@@ -1,0 +1,136 @@
+---
+title: "Areka Raza Initial Code"
+output:
+  word_document: default
+  html_document: default
+---
+
+```{r}
+r = getOption("repos")
+r["CRAN"] = "http://cran.us.r-project.org"
+options(repos = r)
+data<-read.csv("C:/Users/areka/OneDrive/Documents/RYERSON/CIND820/bmw_pricing_challenge.csv", stringsAsFactors = FALSE, sep=",", header = TRUE)
+
+install.packages("corrplot")
+
+library(corrplot)
+
+summary(data)
+#mileage cannot be -64, engine power cannot be 0.
+
+sapply(data, class)
+
+sum(is.na(data))
+
+
+# Creating a new column - Age ---------------------------------------------
+
+data$age<-data$age
+data$sold_at<-as.Date(data$sold_at)
+data$registration_date<-as.Date(data$registration_date)
+data$age<-(data$sold_at-data$registration_date) / 365
+data$age = as.numeric(data$age)
+head(data$age)
+
+
+# Renaming features -------------------------------------------------------
+
+
+colnames(data)[9]<-"HasMoonRoof"
+colnames(data)[10]<-"HasLeatherSeats"
+colnames(data)[11]<-"HasHeatedSeats"
+colnames(data)[12]<-"HasNavigationSystem"
+colnames(data)[13]<-"HasBluetooth"
+colnames(data)[14]<-"HasRemoteStart"
+colnames(data)[15]<-"HasBlindSpotMonitoring"
+colnames(data)[16]<-"HasMSportPackage"
+
+
+# Adjusting incorrect/logical values ----------------------------------------------
+
+
+data["mileage"][data["mileage"]==-64] <- 64
+data["engine_power"][data["engine_power"]==0] <- mean(data$engine_power)
+
+data$HasMoonRoof [data$HasMoonRoof == "true"] <- 1
+data$HasMoonRoof [data$HasMoonRoof == "false"] <- 0
+
+data$HasBluetooth[data$HasBluetooth == "true"] <- 1
+data$HasBluetooth[data$HasBluetooth == "false"] <- 0
+
+data$HasNavigationSystem [data$HasNavigationSystem == "true"] <- 1
+data$HasNavigationSystem [data$HasNavigationSystem == "false"] <- 0
+
+data$HasLeatherSeats [data$HasLeatherSeats == "true"] <- 1
+data$HasLeatherSeats [data$HasLeatherSeats == "false"] <- 0
+
+data$HasHeatedSeats [data$HasHeatedSeats == "true"] <- 1
+data$HasHeatedSeats [data$HasHeatedSeats == "false"] <- 0
+
+data$HasBlindSpotMonitoring [data$HasBlindSpotMonitoring == "true"] <- 1
+data$HasBlindSpotMonitoring [data$HasBlindSpotMonitoring == "false"] <- 0
+
+data$HasRemoteStart [data$HasRemoteStart == "true"] <- 1
+data$HasRemoteStart [data$HasRemoteStart == "false"] <- 0
+
+data$HasMSportPackage [data$HasMSportPackage == "true"] <- 1
+data$HasMSportPackage [data$HasMSportPackage == "false"] <- 0
+
+# Visualizing the data ----------------------------------------------------
+
+
+hist(data$price, main="Histogram of Price", xlab="Price", col="orange", xlim=(c(0,50000)))
+hist(data$age, main= "Histogram of Age", xlab="Age in Years", col="pink", xlim=c(0,12))
+pairs(data[c(3,4,17)],pch=19,cex=0.5)
+
+
+cor<-cor(data[, unlist(lapply(data, is.numeric))])
+
+library(corrplot)
+col <- colorRampPalette(c("#BB4444", "#EE9988", "#FFFFFF", "#77AADD", "#4477AA"))
+corrplot(cor, method="color", col=col(200),  
+         diag=FALSE,
+         type="upper",
+         addCoef.col = "black"
+)
+
+# Normalizing the data ----------------------------------------------------
+
+
+min_max_norm<-function(x){
+  (x-min(x)) / (max(x)-min(x))
+}
+scaled_data<-as.data.frame(lapply(data[c("age","price","mileage","engine_power" ,"HasMoonRoof", "HasLeatherSeats", "HasHeatedSeats", "HasNavigationSystem", "HasBluetooth", "HasRemoteStart", "HasBlindSpotMonitoring", "HasMSportPackage")], min_max_norm))
+head(scaled_data)
+
+
+# Training the dataset ----------------------------------------------------
+
+train_index<-sample(1:nrow(data),0.7*nrow(data))
+train.set<-scaled_data[train_index,]
+test.set<-scaled_data[-train_index,]
+
+
+# Multiple Linear Regression ----------------------------------------------
+
+
+fit=lm(price~ age + mileage + engine_power + HasMoonRoof + HasLeatherSeats + HasHeatedSeats + HasNavigationSystem + HasBluetooth + HasRemoteStart + HasBlindSpotMonitoring +HasMSportPackage , data=data)
+summary(fit)
+
+price = 9106.22909 + (-932.11315 * 20) + (-0.03854 * 1000) + (107.27249 * 145) + (1609.00099 * 1) + (491.47920 * 0) + (1030.41476 * 1) + ( 2828.75985 * 1) + (-320.68982 * 0)
++ (668.08897 * 0) + (346.53828 * 0) + (1848.06370 * 1)
+price
+#The price of a vehicle that is 20 years old, has mileage of up to 1000km and engine power of 145 with the following features: Moon roof, heated seats, navigation system and MSport Package is $11448.11
+
+
+confint(fit)
+
+
+
+
+
+
+
+
+```
+
